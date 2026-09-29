@@ -4,7 +4,7 @@ Plays Minesweeper on https://minesweeperonline.com/ automatically. Selenium read
 from the page, and the [Jev model](https://docs.typesafe.ai/) judges which hidden cells are
 safe and which are mines.
 
-![Minesweeper gameplay](docs/images/minesweeper-demo.png)
+![Minesweeper gameplay](docs/images/minesweeper-gameplay.gif)
 
 ## Setup
 
