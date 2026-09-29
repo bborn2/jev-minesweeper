@@ -7,6 +7,7 @@ Reads the game state from https://minesweeperonline.com/ and asks the Jev model
 import argparse
 import os
 import random
+import sys
 
 from dotenv import load_dotenv
 from typesafe_sdk import Choice, TypeSafeClient
@@ -303,21 +304,34 @@ class JevAdvisor:
 class MinesweeperWebReader:
     """Reads and plays the web Minesweeper game"""
 
-    def __init__(self, debug_mode: bool = True):
+    def __init__(self, debug_mode: bool = True, browser: str = "auto"):
         """
         Initialize the reader
 
         Args:
             debug_mode: show the browser window and keep debugging information
+            browser: browser engine, 'auto', 'edge', or 'safari'
         """
+        if browser == "auto":
+            browser = "safari" if sys.platform == "darwin" else "edge"
+        if browser not in ("edge", "safari"):
+            raise ValueError(f"Unsupported browser: {browser}")
         self.driver = None
         self.debug_mode = debug_mode
+        self.browser = browser
         self.board = []
         self.rows = 0
         self.cols = 0
 
     def start_browser(self):
-        """Start the Edge browser"""
+        """Start the configured browser"""
+        if self.browser == "safari":
+            if sys.platform != "darwin":
+                raise RuntimeError("Safari automation is only available on macOS")
+            self.driver = webdriver.Safari()
+            print("Safari browser started")
+            return
+
         edge_options = Options()
 
         if self.debug_mode:
@@ -652,8 +666,8 @@ class MinesweeperWebReader:
             print("Browser closed")
 
 
-def parse_args() -> str:
-    """Command-line argument: 1 beginner / 2 intermediate / 3 expert, default 2"""
+def parse_args() -> Tuple[str, str]:
+    """Parse difficulty and browser command-line arguments"""
     parser = argparse.ArgumentParser(
         description="Play Minesweeper on minesweeperonline.com automatically with Jev")
     parser.add_argument(
@@ -661,15 +675,20 @@ def parse_args() -> str:
         help="difficulty: 1=beginner 9x9 (10 mines), 2=intermediate 16x16 (40 mines), "
              "3=expert 16x30 (99 mines); default 2",
     )
-    return DIFFICULTY_LEVELS[parser.parse_args().level]
+    parser.add_argument(
+        "--browser", choices=("auto", "edge", "safari"), default="auto",
+        help="browser engine: auto-detect (default), edge, or safari",
+    )
+    args = parser.parse_args()
+    return DIFFICULTY_LEVELS[args.level], args.browser
 
 
 def main():
     """Play Minesweeper automatically with Jev"""
-    level = parse_args()
+    level, browser = parse_args()
     # Create the advisor first so a missing token fails before the browser opens
     advisor = JevAdvisor()
-    reader = MinesweeperWebReader(debug_mode=True)
+    reader = MinesweeperWebReader(debug_mode=True, browser=browser)
 
     try:
         # Open the game

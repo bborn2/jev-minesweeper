@@ -25,7 +25,9 @@ The resulting `.env` should contain:
 TYPESAFE_API_KEY=your-key-here
 ```
 
-Microsoft Edge must be installed; the matching EdgeDriver is downloaded automatically.
+The browser is selected automatically: macOS uses Safari, while other platforms use
+Microsoft Edge. EdgeDriver is downloaded automatically when Edge is selected. Safari can
+be used on macOS without installing a separate driver.
 
 Run the commands with `uv run` so that the locked project dependencies are used. The
 program also needs network access to the game site, the EdgeDriver download source, and
@@ -41,6 +43,16 @@ uv run python web_mine.py 3    # expert 16x30, 99 mines
 ```
 
 The browser window stays open after the game ends.
+
+For Safari on macOS, enable WebDriver once in Terminal before the first run:
+
+```bash
+safaridriver --enable
+uv run python web_mine.py 2
+```
+
+The platform can be overridden for troubleshooting with `--browser edge` or
+`--browser safari`. Safari automation is only supported on macOS.
 
 If the page cannot be loaded, the difficulty cannot be selected, the board cannot be read,
 or a cell cannot be clicked, the run stops with an error instead of continuing with stale
@@ -63,7 +75,8 @@ Every question and answer is printed to the console.
 ## Troubleshooting
 
 - `TYPESAFE_API_KEY is not set`: create `.env` in the project directory and add the key.
-- Browser startup fails: check that Microsoft Edge is installed and that the machine can
-   download the matching EdgeDriver.
+- Browser startup fails: on macOS, run `safaridriver --enable`; on other platforms, check
+   that Microsoft Edge is installed and that the machine can download the matching
+   EdgeDriver.
 - Use `uv run python web_mine.py --help` to verify the project environment without opening
    a browser or calling the game.
