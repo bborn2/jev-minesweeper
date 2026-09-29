@@ -12,10 +12,17 @@ safe and which are mines.
 uv sync
 ```
 
-Create a `.env` file with your API key (from https://console.typesafe.ai/keys):
+Copy `.env.example` to `.env`, then replace the placeholder with your API key from
+https://console.typesafe.ai/keys:
 
+```powershell
+Copy-Item .env.example .env
 ```
-TYPESAFE_API_KEY=your-key
+
+The resulting `.env` should contain:
+
+```dotenv
+TYPESAFE_API_KEY=your-key-here
 ```
 
 Microsoft Edge must be installed; the matching EdgeDriver is downloaded automatically.
