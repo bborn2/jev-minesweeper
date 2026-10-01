@@ -716,8 +716,14 @@ def main():
         for val, count in zip(unique, counts):
             print(f"  {names.get(val, f'number {val}')}: {count}")
 
-        # Leave the browser open: start_browser sets detach, so the window survives exit
-        print("\nThe browser stays open; close it manually")
+        if reader.browser == "safari":
+            # Safari has no "detach" equivalent: its window closes as soon as the
+            # WebDriver session ends at process exit. Block here so the session stays
+            # alive and the window stays open until the user decides to close it.
+            input("\nThe Safari window stays open; press Enter here to close it and exit")
+        else:
+            # Edge: start_browser sets detach, so the window survives exit
+            print("\nThe browser stays open; close it manually")
 
     finally:
         advisor.close()
