@@ -18,9 +18,12 @@ from selenium.common.exceptions import UnexpectedAlertPresentException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.edge.service import Service
-from selenium.webdriver.edge.options import Options
+from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.edge.options import Options as EdgeOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
+from webdriver_manager.chrome import ChromeDriverManager
 import numpy as np
 import time
 from typing import Dict, List, Tuple, Optional
@@ -319,11 +322,11 @@ class MinesweeperWebReader:
 
         Args:
             debug_mode: show the browser window and keep debugging information
-            browser: browser engine, 'auto', 'edge', or 'safari'
+            browser: browser engine, 'auto', 'edge', 'chrome', or 'safari'
         """
         if browser == "auto":
             browser = "safari" if sys.platform == "darwin" else "edge"
-        if browser not in ("edge", "safari"):
+        if browser not in ("edge", "chrome", "safari"):
             raise ValueError(f"Unsupported browser: {browser}")
         self.driver = None
         self.debug_mode = debug_mode
@@ -337,29 +340,47 @@ class MinesweeperWebReader:
         if self.browser == "safari":
             if sys.platform != "darwin":
                 raise RuntimeError("Safari automation is only available on macOS")
-            self.driver = webdriver.Safari()
-            print("Safari browser started")
+            # Safari WebDriver connects to a local service and should not use proxy
+            # Save and temporarily remove proxy environment variables
+            saved_proxies = {}
+            for key in ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy']:
+                if key in os.environ:
+                    saved_proxies[key] = os.environ.pop(key)
+            try:
+                self.driver = webdriver.Safari()
+                print("Safari browser started")
+            finally:
+                # Restore proxy settings for Jev API calls
+                os.environ.update(saved_proxies)
             return
 
-        edge_options = Options()
+        # Edge and Chrome are both Chromium-based and share the same options
+        options_cls = EdgeOptions if self.browser == "edge" else ChromeOptions
+        options = options_cls()
 
         if self.debug_mode:
             # Debug mode settings
-            edge_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            edge_options.add_experimental_option('useAutomationExtension', False)
-            edge_options.add_argument("--start-maximized")
-            edge_options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            options.add_experimental_option('useAutomationExtension', False)
+            options.add_argument("--start-maximized")
+            options.add_argument("--disable-blink-features=AutomationControlled")
 
         # Keep the browser window open after the script exits
-        edge_options.add_experimental_option("detach", True)
-        edge_options.add_argument("--disable-gpu")
-        edge_options.add_argument("--no-sandbox")
-        edge_options.add_argument("--disable-dev-shm-usage")
+        options.add_experimental_option("detach", True)
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
 
-        # Download and use a matching EdgeDriver automatically
-        service = Service(EdgeChromiumDriverManager().install())
-        self.driver = webdriver.Edge(service=service, options=edge_options)
-        print("Edge browser started (debug mode)")
+        if self.browser == "edge":
+            # Download and use a matching EdgeDriver automatically
+            service = EdgeService(EdgeChromiumDriverManager().install())
+            self.driver = webdriver.Edge(service=service, options=options)
+            print("Edge browser started (debug mode)")
+        else:
+            # Download and use a matching ChromeDriver automatically
+            service = ChromeService(ChromeDriverManager().install())
+            self.driver = webdriver.Chrome(service=service, options=options)
+            print("Chrome browser started (debug mode)")
 
     def open_game(self, url: str = "https://minesweeperonline.com/"):
         """
@@ -685,8 +706,8 @@ def parse_args() -> Tuple[str, str]:
              "3=expert 16x30 (99 mines); default 2",
     )
     parser.add_argument(
-        "--browser", choices=("auto", "edge", "safari"), default="auto",
-        help="browser engine: auto-detect (default), edge, or safari",
+        "--browser", choices=("auto", "edge", "chrome", "safari"), default="auto",
+        help="browser engine: auto-detect (default), edge, chrome, or safari",
     )
     args = parser.parse_args()
     return DIFFICULTY_LEVELS[args.level], args.browser

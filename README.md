@@ -26,8 +26,8 @@ TYPESAFE_API_KEY=your-key-here
 ```
 
 The browser is selected automatically: macOS uses Safari, while other platforms use
-Microsoft Edge. EdgeDriver is downloaded automatically when Edge is selected. Safari can
-be used on macOS without installing a separate driver.
+Microsoft Edge. ChromeDriver and EdgeDriver are downloaded automatically when needed.
+Safari can be used on macOS without installing a separate driver.
 
 Run the commands with `uv run` so that the locked project dependencies are used. The
 program also needs network access to the game site, the EdgeDriver download source, and
@@ -51,8 +51,8 @@ safaridriver --enable
 uv run python web_mine.py 2
 ```
 
-The platform can be overridden for troubleshooting with `--browser edge` or
-`--browser safari`. Safari automation is only supported on macOS.
+The platform can be overridden for troubleshooting with `--browser edge`,
+`--browser chrome`, or `--browser safari`. Safari automation is only supported on macOS.
 
 If the page cannot be loaded, the difficulty cannot be selected, the board cannot be read,
 or a cell cannot be clicked, the run stops with an error instead of continuing with stale
