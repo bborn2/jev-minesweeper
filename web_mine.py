@@ -11,6 +11,7 @@ import sys
 
 from dotenv import load_dotenv
 from typesafe_sdk import Choice, TypeSafeClient
+from typesafe_sdk._core.errors import TypeSafeAPIError
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import UnexpectedAlertPresentException
@@ -274,7 +275,15 @@ class JevAdvisor:
         ids = list(questions)
         for start in range(0, len(ids), MAX_QUESTIONS):
             batch = {k: questions[k] for k in ids[start:start + MAX_QUESTIONS]}
-            response = self.client.system_one(state=state, questions=batch)
+            try:
+                response = self.client.system_one(state=state, questions=batch)
+            except TypeSafeAPIError as e:
+                if e.status == 451:
+                    raise RuntimeError(
+                        "Typesafe API is not available in your region. "
+                        "Try using a VPN or proxy to access the service."
+                    ) from e
+                raise
             answers.update(response.choices)
             print(f"Jev({response.model}) judged {len(batch)} facts, "
                   f"input_tokens={response.usage.input_tokens}")
